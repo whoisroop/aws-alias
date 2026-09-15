@@ -1,0 +1,88 @@
+[toplevel]
+
+# ==============================================================================
+# 🖥️ CORE EC2 OPERATIONS PACK
+# ==============================================================================
+
+# 1. LISTING COMPUTING INVENTORY
+# Usage: aws ec2-list
+ec2-list = ec2 describe-instances --query "Reservations[*].Instances[*].{ID:InstanceId,Name:Tags[?Key=='Name'].Value | [0],Type:InstanceType,State:State.Name,PublicIP:PublicIpAddress,PrivateIP:PrivateIpAddress}" --output table
+
+# Usage: aws ec2-running
+ec2-running = ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].{ID:InstanceId,Name:Tags[?Key=='Name'].Value | [0],Type:InstanceType,PublicIP:PublicIpAddress}" --output table
+
+# Usage: aws ec2-types (Quick reference of cloud pricing sizes available in the current region)
+ec2-types = ec2 describe-instance-types --query "InstanceTypes[*].{Type:InstanceType,VCpu:VCpuInfo.DefaultVCpus,MemoryMB:MemoryInfo.SizeInMiB}" --output table --max-items 20
+
+
+# 2. RUNTIME LIFECYCLE MANAGEMENT
+# Usage: aws ec2-start i-0123456789abcdef0
+ec2-start = ec2 start-instances --instance-ids
+
+# Usage: aws ec2-stop i-0123456789abcdef0
+ec2-stop = ec2 stop-instances --instance-ids
+
+# Usage: aws ec2-reboot i-0123456789abcdef0
+ec2-reboot = ec2 reboot-instances --instance-ids
+
+# Usage: aws ec2-terminate i-0123456789abcdef0 (Standard teardown)
+ec2-terminate = ec2 terminate-instances --instance-ids
+
+
+# 3. COMPUTE STORAGE & IMAGES
+# Usage: aws ebs-list
+ebs-list = ec2 describe-volumes --query "Volumes[*].{VolumeId:VolumeId,SizeGB:Size,State:State,Type:VolumeType,Encrypted:Encrypted,AZ:AvailabilityZone}" --output table
+
+# Usage: aws ami-list (Lists images)
+ami-list = ec2 describe-images --query "Images[*].{ImageId:ImageId,Name:Name,State:State,CreationDate:CreationDate}" --output table
+
+
+# 4. REMOTE ACCESS HELPERS
+# Usage: aws ec2-ip i-0123456789abcdef0
+ec2-ip = ec2 describe-instances --query "Reservations[*].Instances[?InstanceId=='$1'].PublicIpAddress" --output text
+
+# Usage: aws ec2-ssh-ready (Generates ready-to-copy SSH strings for running Linux boxes)
+ec2-ssh-ready = ec2 describe-instances --filters "Name=instance-state-name,Values=running" --query "Reservations[*].Instances[*].{Name:Tags[?Key=='Name'].Value | [0],SSH:join('',['ssh ubuntu@',PublicIpAddress])}" --output table
+
+# Usage: aws keypair-list
+keypair-list = ec2 describe-key-pairs --query "KeyPairs[*].{KeyPairId:KeyPairId,KeyName:KeyName,Type:KeyType}" --output table
+
+
+# ==============================================================================
+# 🌐 CORE VPC & NETWORKING PACK
+# ==============================================================================
+
+# 1. NETWORK TOPOLOGY OVERVIEWS
+# Usage: aws vpc-list
+vpc-list = ec2 describe-vpcs --query "Vpcs[*].{VpcId:VpcId,Name:Tags[?Key=='Name'].Value | [0],Cidr:CidrBlock,State:State,IsDefault:IsDefault}" --output table
+
+# Usage: aws subnet-list
+subnet-list = ec2 describe-subnets --query "Subnets[*].{SubnetId:SubnetId,Name:Tags[?Key=='Name'].Value | [0],VpcId:VpcId,Cidr:CidrBlock,AZ:AvailabilityZone,AvailableIPs:AvailableIpAddressCount}" --output table
+
+# Usage: aws subnet-vpc vpc-0123456789abcdef0 (Filter subnets down to one specific network)
+subnet-vpc = ec2 describe-subnets --filters "Name=vpc-id,Values=$1" --query "Subnets[*].{SubnetId:SubnetId,Name:Tags[?Key=='Name'].Value | [0],Cidr:CidrBlock,AZ:AvailabilityZone,AvailableIPs:AvailableIpAddressCount}" --output table
+
+
+# 2. FIREWALLS & TRAFFIC CONTROL
+# Usage: aws sg-list
+sg-list = ec2 describe-security-groups --query "SecurityGroups[*].{GroupId:GroupId,GroupName:GroupName,VpcId:VpcId,Description:Description}" --output table
+
+# Usage: aws sg-rules sg-0123456789abcdef0 (Inspects exact inbound rules for a security group)
+sg-rules = ec2 describe-security-groups --group-ids $1 --query "SecurityGroups[*].IpPermissions[*].{Protocol:IpProtocol,FromPort:FromPort,ToPort:ToPort,Cidrs:IpRanges[*].CidrIp}" --output table
+
+# Usage: aws nacl-list
+nacl-list = ec2 describe-network-acls --query "NetworkAcls[*].{NaclId:NetworkAclId,VpcId:VpcId,IsDefault:IsDefault}" --output table
+
+
+# 3. EDGE GATEWAYS & INTERNET ROUTING
+# Usage: aws igw-list
+igw-list = ec2 describe-internet-gateways --query "InternetGateways[*].{IgwId:InternetGatewayId,Name:Tags[?Key=='Name'].Value | [0],VpcId:Attachments[0].VpcId,State:Attachments[0].State}" --output table
+
+# Usage: aws nat-list
+nat-list = ec2 describe-nat-gateways --query "NatGateways[*].{NatGatewayId:NatGatewayId,VpcId:VpcId,SubnetId:SubnetId,PublicIP:NatGatewayAddresses[0].PublicIp,State:State}" --output table
+
+# Usage: aws route-list
+route-list = ec2 describe-route-tables --query "RouteTables[*].{RouteTableId:RouteTableId,Name:Tags[?Key=='Name'].Value | [0],VpcId:VpcId,RoutesCount:length(Routes)}" --output table
+
+# Usage: aws eip-list (Elastic Static IP tracking)
+eip-list = ec2 describe-addresses --query "Addresses[*].{AllocationId:AllocationId,PublicIp:PublicIp,PrivateIp:PrivateIpAddress,InstanceId:InstanceId}" --output table
