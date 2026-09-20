@@ -11,7 +11,7 @@ These aliases use custom JMESPath queries to output clean, human-readable summar
 You can install and append these aliases directly to your local AWS CLI configuration file (`~/.aws/config`) by running the following command in your terminal:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/whoisroop/aws-alias/main/aliases - >> ~/.aws/config
+curl -sSL https://raw.githubusercontent.com/whoisroop/aws-alias/main/aliases >> ~/.aws/config
 ```
 
 ### Manual Installation
